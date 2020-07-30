@@ -7,22 +7,64 @@ const args = process.argv.slice(2);
 const url = args[0];
 const filePath = args[1];
 const fs = require('fs');
+const readline = require('readline');
 
+//body is just actual content that's coming back
 request(url, (error, response, body) => {
-	fs.writeFile(filePath, body, () => {
-		fs.stat(filePath, (err, stats) => {
-			console.log(stats.size);
-			console.log(`Downloaded and saved ${stats.size} bytes to ${filePath}`);
-		});
-	});
+	// console.log(response);
+	if (error) {
+		console.log(error);
+		return;
+	}
 
-	// console.log('error', error);
-	// console.log('statusCode:', response.statusCode);
-	// console.log('body', body);
+	// check if the filepath already exists
+	if (fs.existsSync(filePath)) {
+		const rl = readline.createInterface({
+			input: process.stdin,
+			output: process.stdout,
+			prompt: 'Do you want to overwrite this file? Y or N ',
+		});
+
+		rl.prompt();
+
+		rl.on('line', (line) => {
+			switch (line.trim().toLowerCase()) {
+				// stacking is possible
+				case 'y':
+				case 'Y':
+					fs.writeFile(filePath, body, () => {
+						fs.stat(filePath, (err, stats) => {
+							if (err) {
+								console.log(err);
+							}
+							// console.log(stats.size);
+							console.log(
+								`Downloaded and saved ${stats.size} bytes to ${filePath}`
+							);
+						});
+					});
+					break;
+				default:
+					console.log('file not saved');
+					break;
+			}
+			// rl.prompt();
+		}).on('close', () => {
+			console.log('Have a great day!');
+			process.exit(0);
+		});
+	}
 });
 
-// have i made the right request
-// how to search to get bytes from response -- am i getting the bytes info from the reponse
-// what file am i writing
-// where to search for Node's fs module
-// how should i scan the documentation for information i need
+// what is common practice for error and response as i'm not using it right now
+// What should happen if the local file path given already exists? tip: readline module
+
+// What should happen if the local file path given is invalid?
+// -->
+// fs.writeFile('message.txt', data, (err) => {
+// 	if (err) throw err;
+// 	console.log('The file has been saved!');
+// });
+
+// What should happen if the given URL results in an error or non-200 result?
+// --> by default, any response not in 200 will throw an error
